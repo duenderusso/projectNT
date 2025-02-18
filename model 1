@@ -199,7 +199,7 @@ namespace NT Warriors
 
         public bool VerificarDerrota()
         {
-            return HeroisDestruídos >= 2;
+            return HeroisDestruídos >= 3;
         }
 
         public void MostrarCampo()
