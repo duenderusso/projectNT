@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace NT Warriors
+namespace MegaManTCG
 {
     class Carta
     {
@@ -136,9 +136,12 @@ namespace NT Warriors
             while (jogoAtivo)
             {
                 Jogador jogadorAtual = (turno % 2 == 1) ? jogador1 : jogador2;
+                Jogador jogadorAdversario = (turno % 2 == 1) ? jogador2 : jogador1;
+
                 Console.WriteLine($"\n--- Turno {turno}: {jogadorAtual.Nome} ---");
                 jogadorAtual.MostrarMao();
                 jogadorAtual.MostrarCampo();
+                Console.WriteLine($"Campo de {jogadorAdversario.Nome}: {string.Join(", ", jogadorAdversario.Campo.Select(c => c.Nome))}");
 
                 Console.Write("Escolha uma carta para jogar (índice ou -1 para passar): ");
                 if (int.TryParse(Console.ReadLine(), out int indice) && indice >= 0 && indice < jogadorAtual.Mao.Count)
@@ -154,8 +157,10 @@ namespace NT Warriors
                 Jogador.MostrarSucata();
 
                 turno++;
-                Thread.Sleep(1000);
+                Thread.Sleep(1000); // Pausa de 1 segundo entre os turnos
             }
         }
     }
+}
+
 }
