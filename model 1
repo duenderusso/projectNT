@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 
 namespace MegaManTCG
 {
@@ -31,14 +33,6 @@ namespace MegaManTCG
         public string Tipo { get; set; }
         public string Descricao { get; set; }
         public Action<Jogador, Jogador> Ativar { get; set; }
-
-        public Habilidade(string nome, string tipo, string descricao, Action<Jogador, Jogador> ativar)
-        {
-            Nome = nome;
-            Tipo = tipo;
-            Descricao = descricao;
-            Ativar = ativar;
-        }
     }
 
     class Jogador
@@ -49,6 +43,7 @@ namespace MegaManTCG
         public List<Carta> DeckPrincipal { get; set; }
         public List<Carta> DeckHerois { get; set; }
         public List<Carta> Campo { get; set; }
+        public static List<Carta> Sucata { get; set; } = new List<Carta>();
 
         public Jogador(string nome, List<Carta> deckPrincipal, List<Carta> deckHerois)
         {
@@ -58,66 +53,70 @@ namespace MegaManTCG
             DeckPrincipal = deckPrincipal;
             DeckHerois = deckHerois;
             Campo = new List<Carta>();
+
             EmbaralharDeck(DeckPrincipal);
             EmbaralharDeck(DeckHerois);
+
             for (int i = 0; i < 3; i++)
             {
-                ComprarCartaPrincipal();
-                ComprarCartaHeroi();
+                ComprarCarta(DeckPrincipal);
+                ComprarCarta(DeckHerois);
             }
         }
 
         private void EmbaralharDeck(List<Carta> deck)
         {
             Random rng = new Random();
-            deck.Sort((a, b) => rng.Next(-1, 2));
-        }
-
-        public void ComprarCartaPrincipal()
-        {
-            if (DeckPrincipal.Count > 0)
+            for (int i = deck.Count - 1; i > 0; i--)
             {
-                Mao.Add(DeckPrincipal[0]);
-                DeckPrincipal.RemoveAt(0);
+                int j = rng.Next(i + 1);
+                (deck[i], deck[j]) = (deck[j], deck[i]);
             }
         }
 
-        public void ComprarCartaHeroi()
+        public void ComprarCarta(List<Carta> deck)
         {
-            if (DeckHerois.Count > 0)
+            if (deck.Count > 0)
             {
-                Mao.Add(DeckHerois[0]);
-                DeckHerois.RemoveAt(0);
+                Mao.Add(deck[0]);
+                deck.RemoveAt(0);
             }
         }
 
         public void JogarCarta(int indice)
         {
-            if (indice >= 0 && indice < Mao.Count)
+            if (indice >= 0 && indice < Mao.Count && EnergiaTotal >= Mao[indice].Energia)
             {
                 Carta carta = Mao[indice];
-                if (EnergiaTotal >= carta.Energia)
-                {
-                    Mao.RemoveAt(indice);
-                    Campo.Add(carta);
-                    EnergiaTotal -= carta.Energia;
-                }
+                Mao.RemoveAt(indice);
+                Campo.Add(carta);
+                EnergiaTotal -= carta.Energia;
             }
         }
-    }
 
-    class Combate
-    {
-        public static List<Carta> Sucata = new List<Carta>();
-
-        public static void SimularCombate(Jogador atacante, Jogador defensor, Carta cartaAtacante, Carta cartaDefensor)
+        public void DerrotarCarta(Carta carta)
         {
-            cartaDefensor.Resistencia -= cartaAtacante.Poder;
-            if (cartaDefensor.Resistencia <= 0)
+            if (Campo.Contains(carta))
             {
-                defensor.Campo.Remove(cartaDefensor);
-                Sucata.Add(cartaDefensor);
+                Campo.Remove(carta);
+                Sucata.Add(carta);
+                Console.WriteLine($"{carta.Nome} foi enviado para a Sucata!");
             }
+        }
+
+        public void MostrarMao()
+        {
+            Console.WriteLine($"Mão de {Nome}: {string.Join(", ", Mao.Select(c => c.Nome))}");
+        }
+
+        public void MostrarCampo()
+        {
+            Console.WriteLine($"Campo de {Nome}: {string.Join(", ", Campo.Select(c => c.Nome))}");
+        }
+
+        public static void MostrarSucata()
+        {
+            Console.WriteLine($"Sucata: {string.Join(", ", Sucata.Select(c => c.Nome))}");
         }
     }
 
@@ -125,26 +124,37 @@ namespace MegaManTCG
     {
         static void Main(string[] args)
         {
-            Carta megaMan = new Carta("Mega Man", "Herói", "Neutro", 5, 3000, 2500, new List<Habilidade>());
-            Carta protoMan = new Carta("Proto Man", "Herói", "Fogo", 4, 2500, 2000, new List<Habilidade>());
-            Carta mettaur = new Carta("Mettaur", "Lacaio", "Neutro", 2, 1000, 1500, new List<Habilidade>());
+            List<Carta> deck1 = new List<Carta> { new Carta("Mega Man", "Herói", "Neutro", 5, 3000, 2500, null) };
+            List<Carta> deck2 = new List<Carta> { new Carta("Proto Man", "Herói", "Fogo", 4, 2500, 2000, null) };
             
-            List<Carta> deckPrincipalJogador1 = new List<Carta> { mettaur, mettaur };
-            List<Carta> deckHeroisJogador1 = new List<Carta> { megaMan, protoMan };
+            Jogador jogador1 = new Jogador("Jogador 1", deck1, deck1);
+            Jogador jogador2 = new Jogador("Jogador 2", deck2, deck2);
             
-            List<Carta> deckPrincipalJogador2 = new List<Carta> { mettaur, mettaur };
-            List<Carta> deckHeroisJogador2 = new List<Carta> { protoMan, megaMan };
-            
-            Jogador jogador1 = new Jogador("Jogador 1", deckPrincipalJogador1, deckHeroisJogador1);
-            Jogador jogador2 = new Jogador("Jogador 2", deckPrincipalJogador2, deckHeroisJogador2);
-            
-            Console.WriteLine("--- Início do Jogo ---");
-            jogador1.JogarCarta(0);
-            jogador2.JogarCarta(0);
-            
-            if (jogador1.Campo.Count > 0 && jogador2.Campo.Count > 0)
+            bool jogoAtivo = true;
+            int turno = 1;
+
+            while (jogoAtivo)
             {
-                Combate.SimularCombate(jogador1, jogador2, jogador1.Campo[0], jogador2.Campo[0]);
+                Jogador jogadorAtual = (turno % 2 == 1) ? jogador1 : jogador2;
+                Console.WriteLine($"\n--- Turno {turno}: {jogadorAtual.Nome} ---");
+                jogadorAtual.MostrarMao();
+                jogadorAtual.MostrarCampo();
+
+                Console.Write("Escolha uma carta para jogar (índice ou -1 para passar): ");
+                if (int.TryParse(Console.ReadLine(), out int indice) && indice >= 0 && indice < jogadorAtual.Mao.Count)
+                {
+                    jogadorAtual.JogarCarta(indice);
+                }
+                else
+                {
+                    Console.WriteLine("Passando turno...");
+                }
+
+                jogadorAtual.ComprarCarta(jogadorAtual.DeckPrincipal);
+                Jogador.MostrarSucata();
+
+                turno++;
+                Thread.Sleep(1000);
             }
         }
     }
