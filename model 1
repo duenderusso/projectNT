@@ -10,10 +10,11 @@ namespace NT Warriors
         public string Nome { get; set; }
         public string Tipo { get; set; }
         public string Elemento { get; set; }
-        public int Energia { get; set; }
+        public int Energia { get; set; } // Usada apenas para ataques
         public int Poder { get; set; }
         public int Resistencia { get; set; }
         public List<Habilidade> Habilidades { get; set; }
+        public bool PodeAtacar { get; set; } // Lacaios não podem atacar
 
         public Carta(string nome, string tipo, string elemento, int energia, int poder, int resistencia, List<Habilidade> habilidades)
         {
@@ -24,6 +25,13 @@ namespace NT Warriors
             Poder = poder;
             Resistencia = resistencia;
             Habilidades = habilidades ?? new List<Habilidade>();
+            PodeAtacar = false; // Lacaios não podem atacar
+        }
+
+        public void Destruir()
+        {
+            Resistencia = 0;
+            Poder = 0;
         }
     }
 
@@ -42,8 +50,11 @@ namespace NT Warriors
         public List<Carta> Mao { get; set; }
         public List<Carta> DeckPrincipal { get; set; }
         public List<Carta> DeckHerois { get; set; }
-        public List<Carta> Campo { get; set; }
+        public List<Carta> CampoSuperior { get; set; }
+        public Carta HeroiAtivo { get; set; }
+        public Carta HeroiSuporte { get; set; }
         public static List<Carta> Sucata { get; set; } = new List<Carta>();
+        public int HeroisDestruídos { get; set; } = 0;
 
         public Jogador(string nome, List<Carta> deckPrincipal, List<Carta> deckHerois)
         {
@@ -52,7 +63,7 @@ namespace NT Warriors
             Mao = new List<Carta>();
             DeckPrincipal = deckPrincipal;
             DeckHerois = deckHerois;
-            Campo = new List<Carta>();
+            CampoSuperior = new List<Carta>();
 
             EmbaralharDeck(DeckPrincipal);
             EmbaralharDeck(DeckHerois);
@@ -83,35 +94,120 @@ namespace NT Warriors
             }
         }
 
-        public void JogarCarta(int indice)
+        public void JogarCarta(Carta carta)
         {
-            if (indice >= 0 && indice < Mao.Count && EnergiaTotal >= Mao[indice].Energia)
+            if (Mao.Contains(carta) && EnergiaTotal >= carta.Energia)
             {
-                Carta carta = Mao[indice];
-                Mao.RemoveAt(indice);
-                Campo.Add(carta);
+                Mao.Remove(carta);
                 EnergiaTotal -= carta.Energia;
-            }
-        }
 
-        public void DerrotarCarta(Carta carta)
-        {
-            if (Campo.Contains(carta))
+                if (carta.Tipo == "Herói")
+                {
+                    if (HeroiAtivo == null && !CampoSuperior.Any(c => c.Nome == carta.Nome))
+                    {
+                        HeroiAtivo = carta;
+                    }
+                    else if (HeroiSuporte == null && !CampoSuperior.Any(c => c.Nome == carta.Nome))
+                    {
+                        HeroiSuporte = carta;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Você já tem dois heróis em campo ou herói repetido.");
+                    }
+                }
+                else
+                {
+                    if (CampoSuperior.Count < 5)
+                    {
+                        CampoSuperior.Add(carta);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Não é possível adicionar mais lacaios. Já existem 5 lacaios no campo.");
+                    }
+                }
+            }
+            else
             {
-                Campo.Remove(carta);
-                Sucata.Add(carta);
-                Console.WriteLine($"{carta.Nome} foi enviado para a Sucata!");
+                Console.WriteLine("Energia insuficiente para jogar esta carta!");
             }
         }
 
-        public void MostrarMao()
+        public void Atacar(Jogador adversario)
         {
-            Console.WriteLine($"Mão de {Nome}: {string.Join(", ", Mao.Select(c => c.Nome))}");
+            if (HeroiAtivo != null && CampoSuperior.Count > 0)
+            {
+                int dano = HeroiAtivo.Poder;
+
+                foreach (var lacaio in adversario.CampoSuperior.ToList())
+                {
+                    if (lacaio.Resistencia > 0)
+                    {
+                        dano -= lacaio.Resistencia;
+                        lacaio.Resistencia = 0;
+                        Sucata.Add(lacaio);
+                    }
+                    if (dano <= 0) break;
+                }
+
+                if (dano > 0 && adversario.HeroiAtivo != null)
+                {
+                    adversario.HeroiAtivo.Resistencia -= dano;
+                    if (adversario.HeroiAtivo.Resistencia <= 0)
+                    {
+                        Sucata.Add(adversario.HeroiAtivo);
+                        adversario.HeroiAtivo = null;
+                        adversario.HeroisDestruídos++;
+
+                        Console.WriteLine($"{adversario.Nome} perdeu um herói! Sacando um novo herói...");
+                        adversario.SacarNovoHeroi();
+                    }
+                }
+            }
+        }
+
+        public void SacarNovoHeroi()
+        {
+            if (DeckHerois.Count > 0)
+            {
+                var novoHeroi = DeckHerois[0];
+                DeckHerois.RemoveAt(0);
+                Mao.Add(novoHeroi);
+                Console.WriteLine($"{Nome} sacou um novo herói: {novoHeroi.Nome}");
+            }
+        }
+
+        public void VerificarHeróisNoCampo()
+        {
+            if ((HeroiAtivo == null || HeroiSuporte == null) && DeckHerois.Count > 0)
+            {
+                Console.WriteLine($"{Nome} não tem dois heróis no campo! Escolha um herói para colocar em campo.");
+                SacarNovoHeroi();
+                if (HeroiAtivo == null)
+                {
+                    HeroiAtivo = Mao.First(c => c.Tipo == "Herói");
+                    Mao.Remove(HeroiAtivo);
+                }
+                else if (HeroiSuporte == null)
+                {
+                    HeroiSuporte = Mao.First(c => c.Tipo == "Herói");
+                    Mao.Remove(HeroiSuporte);
+                }
+            }
+        }
+
+        public bool VerificarDerrota()
+        {
+            return HeroisDestruídos >= 3;
         }
 
         public void MostrarCampo()
         {
-            Console.WriteLine($"Campo de {Nome}: {string.Join(", ", Campo.Select(c => c.Nome))}");
+            Console.WriteLine($"Campo de {Nome}:");
+            Console.WriteLine($"- Fileira Superior (Lacaios): {string.Join(", ", CampoSuperior.Select(c => c.Nome))}");
+            Console.WriteLine($"- Herói Ativo (Meio): {HeroiAtivo?.Nome ?? "Nenhum"}");
+            Console.WriteLine($"- Herói Suporte (Inferior): {HeroiSuporte?.Nome ?? "Nenhum"}");
         }
 
         public static void MostrarSucata()
@@ -124,38 +220,99 @@ namespace NT Warriors
     {
         static void Main(string[] args)
         {
-            List<Carta> deck1 = new List<Carta> { new Carta("Mega Man", "Herói", "Neutro", 5, 3000, 2500, null) };
-            List<Carta> deck2 = new List<Carta> { new Carta("Proto Man", "Herói", "Fogo", 4, 2500, 2000, null) };
-            
+            // Exemplo de decks com heróis e lacaios
+            List<Carta> deck1 = new List<Carta>
+            {
+                new Carta("Mega Man", "Herói", "Neutro", 0, 3000, 2500, null),
+                new Carta("Mega Man - Suporte", "Herói", "Neutro", 0, 1000, 1000, null),
+                new Carta("Lacaio 1", "Lacaio", "Neutro", 2, 1500, 1000, null),
+                new Carta("Lacaio 2", "Lacaio", "Neutro", 2, 1400, 1200, null)
+            };
+            List<Carta> deck2 = new List<Carta>
+            {
+                new Carta("Proto Man", "Herói", "Fogo", 0, 2500, 2000, null),
+                new Carta("Proto Man - Suporte", "Herói", "Fogo", 0, 1000, 1000, null),
+                new Carta("Lacaio 3", "Lacaio", "Fogo", 2, 1300, 1200, null),
+                new Carta("Lacaio 4", "Lacaio", "Fogo", 2, 1300, 1100, null)
+            };
+
             Jogador jogador1 = new Jogador("Jogador 1", deck1, deck1);
             Jogador jogador2 = new Jogador("Jogador 2", deck2, deck2);
-            
+
             bool jogoAtivo = true;
             int turno = 1;
+
+            // Fase de colocar heróis em campo
+            Console.WriteLine($"{jogador1.Nome}, escolha 2 heróis para colocar em campo:");
+            jogador1.MostrarMao();
+            jogador1.JogarCarta(jogador1.Mao.First(c => c.Tipo == "Herói"));
+            jogador1.JogarCarta(jogador1.Mao.First(c => c.Tipo == "Herói"));
+
+            Console.WriteLine($"{jogador2.Nome}, escolha 2 heróis para colocar em campo:");
+            jogador2.MostrarMao();
+            jogador2.JogarCarta(jogador2.Mao.First(c => c.Tipo == "Herói"));
+            jogador2.JogarCarta(jogador2.Mao.First(c => c.Tipo == "Herói"));
 
             while (jogoAtivo)
             {
                 Jogador jogadorAtual = (turno % 2 == 1) ? jogador1 : jogador2;
-                Console.WriteLine($"\n--- Turno {turno}: {jogadorAtual.Nome} ---");
-                jogadorAtual.MostrarMao();
+                Jogador jogadorAdversario = (turno % 2 == 1) ? jogador2 : jogador1;
+
+                Console.Clear();
+                Console.WriteLine($"Turno {turno} - {jogadorAtual.Nome}'s vez!");
+
+                // Verificar se o jogador tem 2 heróis no campo
+                jogadorAtual.VerificarHeróisNoCampo();
+
+                // Mostrar o campo atual de cada jogador
                 jogadorAtual.MostrarCampo();
+                jogadorAdversario.MostrarCampo();
 
-                Console.Write("Escolha uma carta para jogar (índice ou -1 para passar): ");
-                if (int.TryParse(Console.ReadLine(), out int indice) && indice >= 0 && indice < jogadorAtual.Mao.Count)
+                // Jogador decide as ações: atacar ou jogar uma carta
+                Console.WriteLine("\nO que você quer fazer?");
+                Console.WriteLine("1. Atacar");
+                Console.WriteLine("2. Jogar uma carta");
+                Console.Write("Escolha: ");
+                string escolha = Console.ReadLine();
+
+                if (escolha == "1")
                 {
-                    jogadorAtual.JogarCarta(indice);
+                    // Jogador ataca
+                    jogadorAtual.Atacar(jogadorAdversario);
                 }
-                else
+                else if (escolha == "2")
                 {
-                    Console.WriteLine("Passando turno...");
+                    // Jogador escolhe uma carta para jogar
+                    Console.WriteLine("Escolha uma carta para jogar:");
+                    for (int i = 0; i < jogadorAtual.Mao.Count; i++)
+                    {
+                        Console.WriteLine($"{i + 1}. {jogadorAtual.Mao[i].Nome}");
+                    }
+
+                    int cartaEscolhida = int.Parse(Console.ReadLine()) - 1;
+
+                    if (cartaEscolhida >= 0 && cartaEscolhida < jogadorAtual.Mao.Count)
+                    {
+                        jogadorAtual.JogarCarta(jogadorAtual.Mao[cartaEscolhida]);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Escolha inválida.");
+                    }
                 }
 
-                jogadorAtual.ComprarCarta(jogadorAtual.DeckPrincipal);
-                Jogador.MostrarSucata();
+                // Verificar o estado do jogo
+                if (jogadorAdversario.VerificarDerrota())
+                {
+                    Console.WriteLine($"{jogadorAdversario.Nome} perdeu o jogo!");
+                    jogoAtivo = false;
+                }
 
                 turno++;
-                Thread.Sleep(1000);
+                Thread.Sleep(2000); // Espera de 2 segundos para o próximo turno
             }
+
+            Console.WriteLine("Fim do jogo!");
         }
     }
 }
