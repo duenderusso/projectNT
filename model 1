@@ -1,0 +1,151 @@
+using System;
+using System.Collections.Generic;
+
+namespace MegaManTCG
+{
+    class Carta
+    {
+        public string Nome { get; set; }
+        public string Tipo { get; set; }
+        public string Elemento { get; set; }
+        public int Energia { get; set; }
+        public int Poder { get; set; }
+        public int Resistencia { get; set; }
+        public List<Habilidade> Habilidades { get; set; }
+
+        public Carta(string nome, string tipo, string elemento, int energia, int poder, int resistencia, List<Habilidade> habilidades)
+        {
+            Nome = nome;
+            Tipo = tipo;
+            Elemento = elemento;
+            Energia = energia;
+            Poder = poder;
+            Resistencia = resistencia;
+            Habilidades = habilidades ?? new List<Habilidade>();
+        }
+    }
+
+    class Habilidade
+    {
+        public string Nome { get; set; }
+        public string Tipo { get; set; }
+        public string Descricao { get; set; }
+        public Action<Jogador, Jogador> Ativar { get; set; }
+
+        public Habilidade(string nome, string tipo, string descricao, Action<Jogador, Jogador> ativar)
+        {
+            Nome = nome;
+            Tipo = tipo;
+            Descricao = descricao;
+            Ativar = ativar;
+        }
+    }
+
+    class Jogador
+    {
+        public string Nome { get; set; }
+        public int EnergiaTotal { get; set; }
+        public List<Carta> Mao { get; set; }
+        public List<Carta> DeckPrincipal { get; set; }
+        public List<Carta> DeckHerois { get; set; }
+        public List<Carta> Campo { get; set; }
+
+        public Jogador(string nome, List<Carta> deckPrincipal, List<Carta> deckHerois)
+        {
+            Nome = nome;
+            EnergiaTotal = 10;
+            Mao = new List<Carta>();
+            DeckPrincipal = deckPrincipal;
+            DeckHerois = deckHerois;
+            Campo = new List<Carta>();
+            EmbaralharDeck(DeckPrincipal);
+            EmbaralharDeck(DeckHerois);
+            for (int i = 0; i < 3; i++)
+            {
+                ComprarCartaPrincipal();
+                ComprarCartaHeroi();
+            }
+        }
+
+        private void EmbaralharDeck(List<Carta> deck)
+        {
+            Random rng = new Random();
+            deck.Sort((a, b) => rng.Next(-1, 2));
+        }
+
+        public void ComprarCartaPrincipal()
+        {
+            if (DeckPrincipal.Count > 0)
+            {
+                Mao.Add(DeckPrincipal[0]);
+                DeckPrincipal.RemoveAt(0);
+            }
+        }
+
+        public void ComprarCartaHeroi()
+        {
+            if (DeckHerois.Count > 0)
+            {
+                Mao.Add(DeckHerois[0]);
+                DeckHerois.RemoveAt(0);
+            }
+        }
+
+        public void JogarCarta(int indice)
+        {
+            if (indice >= 0 && indice < Mao.Count)
+            {
+                Carta carta = Mao[indice];
+                if (EnergiaTotal >= carta.Energia)
+                {
+                    Mao.RemoveAt(indice);
+                    Campo.Add(carta);
+                    EnergiaTotal -= carta.Energia;
+                }
+            }
+        }
+    }
+
+    class Combate
+    {
+        public static List<Carta> Sucata = new List<Carta>();
+
+        public static void SimularCombate(Jogador atacante, Jogador defensor, Carta cartaAtacante, Carta cartaDefensor)
+        {
+            cartaDefensor.Resistencia -= cartaAtacante.Poder;
+            if (cartaDefensor.Resistencia <= 0)
+            {
+                defensor.Campo.Remove(cartaDefensor);
+                Sucata.Add(cartaDefensor);
+            }
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Carta megaMan = new Carta("Mega Man", "Herói", "Neutro", 5, 3000, 2500, new List<Habilidade>());
+            Carta protoMan = new Carta("Proto Man", "Herói", "Fogo", 4, 2500, 2000, new List<Habilidade>());
+            Carta mettaur = new Carta("Mettaur", "Lacaio", "Neutro", 2, 1000, 1500, new List<Habilidade>());
+            
+            List<Carta> deckPrincipalJogador1 = new List<Carta> { mettaur, mettaur };
+            List<Carta> deckHeroisJogador1 = new List<Carta> { megaMan, protoMan };
+            
+            List<Carta> deckPrincipalJogador2 = new List<Carta> { mettaur, mettaur };
+            List<Carta> deckHeroisJogador2 = new List<Carta> { protoMan, megaMan };
+            
+            Jogador jogador1 = new Jogador("Jogador 1", deckPrincipalJogador1, deckHeroisJogador1);
+            Jogador jogador2 = new Jogador("Jogador 2", deckPrincipalJogador2, deckHeroisJogador2);
+            
+            Console.WriteLine("--- Início do Jogo ---");
+            jogador1.JogarCarta(0);
+            jogador2.JogarCarta(0);
+            
+            if (jogador1.Campo.Count > 0 && jogador2.Campo.Count > 0)
+            {
+                Combate.SimularCombate(jogador1, jogador2, jogador1.Campo[0], jogador2.Campo[0]);
+            }
+        }
+    }
+}
