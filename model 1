@@ -199,7 +199,7 @@ namespace NT Warriors
 
         public bool VerificarDerrota()
         {
-            return HeroisDestruídos >= 3;
+            return HeroisDestruídos >= 2;
         }
 
         public void MostrarCampo()
@@ -260,6 +260,9 @@ namespace NT Warriors
 
                 Console.Clear();
                 Console.WriteLine($"Turno {turno} - {jogadorAtual.Nome}'s vez!");
+
+                // No início do turno, o jogador deve comprar uma carta do baralho principal
+                jogadorAtual.ComprarCarta(jogadorAtual.DeckPrincipal);
 
                 // Verificar se o jogador tem 2 heróis no campo
                 jogadorAtual.VerificarHeróisNoCampo();
