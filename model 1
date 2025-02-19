@@ -10,7 +10,7 @@ namespace NT Warriors
         public string Nome { get; set; }
         public string Tipo { get; set; }
         public string Elemento { get; set; }
-        public int Energia { get; set; } // Usada apenas para ataques
+        public int Energia { get; set; } // Usada para atacar ou habilidades
         public int Poder { get; set; }
         public int Resistencia { get; set; }
         public List<Habilidade> Habilidades { get; set; }
@@ -96,10 +96,26 @@ namespace NT Warriors
 
         public void JogarCarta(Carta carta)
         {
-            if (Mao.Contains(carta) && EnergiaTotal >= carta.Energia)
+            if (Mao.Contains(carta))
             {
-                Mao.Remove(carta);
-                EnergiaTotal -= carta.Energia;
+                // Verifica se a carta é do tipo Ação ou Equipamento
+                if (carta.Tipo == "Ação" || carta.Tipo == "Equipamento")
+                {
+                    if (EnergiaTotal >= carta.Energia)
+                    {
+                        Mao.Remove(carta);
+                        EnergiaTotal -= carta.Energia; // Gasta energia apenas para ações/equipamentos
+                    }
+                    else
+                    {
+                        Console.WriteLine("Energia insuficiente para jogar esta carta!");
+                        return;
+                    }
+                }
+                else
+                {
+                    Mao.Remove(carta); // Heróis e lacaios não gastam energia para serem jogados
+                }
 
                 if (carta.Tipo == "Herói")
                 {
@@ -116,7 +132,7 @@ namespace NT Warriors
                         Console.WriteLine("Você já tem dois heróis em campo ou herói repetido.");
                     }
                 }
-                else
+                else if (carta.Tipo == "Lacaio")
                 {
                     if (CampoSuperior.Count < 5)
                     {
@@ -127,10 +143,15 @@ namespace NT Warriors
                         Console.WriteLine("Não é possível adicionar mais lacaios. Já existem 5 lacaios no campo.");
                     }
                 }
+                else if (carta.Tipo == "Ação" || carta.Tipo == "Equipamento")
+                {
+                    // Lógica para ativar ações ou equipamentos
+                    Console.WriteLine($"{carta.Nome} foi jogada com sucesso!");
+                }
             }
             else
             {
-                Console.WriteLine("Energia insuficiente para jogar esta carta!");
+                Console.WriteLine("Carta não encontrada na mão!");
             }
         }
 
@@ -138,33 +159,88 @@ namespace NT Warriors
         {
             if (HeroiAtivo != null && CampoSuperior.Count > 0)
             {
-                int dano = HeroiAtivo.Poder;
-
-                foreach (var lacaio in adversario.CampoSuperior.ToList())
+                // Verifica se o jogador tem energia suficiente para atacar com o herói ativo
+                if (EnergiaTotal >= HeroiAtivo.Energia)
                 {
-                    if (lacaio.Resistencia > 0)
+                    EnergiaTotal -= HeroiAtivo.Energia; // Gasta energia para atacar
+
+                    int dano = HeroiAtivo.Poder;
+                    Console.WriteLine($"{Nome} atacou com {HeroiAtivo.Nome} causando {dano} de dano!");
+
+                    // Jogador defensor escolhe como bloquear o dano
+                    List<Carta> lacaiosUsados = adversario.EscolherLacaiosParaDefesa(dano);
+
+                    // Aplicar dano restante ao herói ativo do adversário
+                    if (dano > 0 && adversario.HeroiAtivo != null)
                     {
-                        dano -= lacaio.Resistencia;
-                        lacaio.Resistencia = 0;
-                        Sucata.Add(lacaio);
+                        adversario.HeroiAtivo.Resistencia -= dano;
+                        Console.WriteLine($"{adversario.HeroiAtivo.Nome} sofreu {dano} de dano!");
+
+                        if (adversario.HeroiAtivo.Resistencia <= 0)
+                        {
+                            Sucata.Add(adversario.HeroiAtivo);
+                            adversario.HeroiAtivo = null;
+                            adversario.HeroisDestruídos++;
+
+                            Console.WriteLine($"{adversario.Nome} perdeu um herói! Sacando um novo herói...");
+                            adversario.SacarNovoHeroi();
+                        }
                     }
-                    if (dano <= 0) break;
                 }
-
-                if (dano > 0 && adversario.HeroiAtivo != null)
+                else
                 {
-                    adversario.HeroiAtivo.Resistencia -= dano;
-                    if (adversario.HeroiAtivo.Resistencia <= 0)
-                    {
-                        Sucata.Add(adversario.HeroiAtivo);
-                        adversario.HeroiAtivo = null;
-                        adversario.HeroisDestruídos++;
-
-                        Console.WriteLine($"{adversario.Nome} perdeu um herói! Sacando um novo herói...");
-                        adversario.SacarNovoHeroi();
-                    }
+                    Console.WriteLine("Energia insuficiente para atacar!");
                 }
             }
+        }
+
+        public List<Carta> EscolherLacaiosParaDefesa(int dano)
+        {
+            List<Carta> lacaiosUsados = new List<Carta>();
+            Console.WriteLine($"{Nome}, você está sofrendo um ataque de {dano} de dano!");
+
+            while (dano > 0 && CampoSuperior.Count > 0)
+            {
+                Console.WriteLine("Escolha um lacaio para bloquear o dano (ou digite 0 para parar):");
+                for (int i = 0; i < CampoSuperior.Count; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {CampoSuperior[i].Nome} (Resistência: {CampoSuperior[i].Resistencia})");
+                }
+
+                int escolha;
+                bool entradaValida = int.TryParse(Console.ReadLine(), out escolha);
+
+                if (entradaValida && escolha >= 1 && escolha <= CampoSuperior.Count)
+                {
+                    Carta lacaioEscolhido = CampoSuperior[escolha - 1];
+                    lacaiosUsados.Add(lacaioEscolhido);
+
+                    if (lacaioEscolhido.Resistencia >= dano)
+                    {
+                        lacaioEscolhido.Resistencia -= dano;
+                        dano = 0;
+                        Console.WriteLine($"{lacaioEscolhido.Nome} bloqueou todo o dano!");
+                    }
+                    else
+                    {
+                        dano -= lacaioEscolhido.Resistencia;
+                        lacaioEscolhido.Resistencia = 0;
+                        Console.WriteLine($"{lacaioEscolhido.Nome} foi destruído!");
+                        Sucata.Add(lacaioEscolhido);
+                        CampoSuperior.Remove(lacaioEscolhido);
+                    }
+                }
+                else if (escolha == 0)
+                {
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Escolha inválida. Tente novamente.");
+                }
+            }
+
+            return lacaiosUsados;
         }
 
         public void SacarNovoHeroi()
@@ -199,7 +275,7 @@ namespace NT Warriors
 
         public bool VerificarDerrota()
         {
-            return HeroisDestruídos >= 3;
+            return HeroisDestruídos >= 3; // Verifica se 3 heróis foram destruídos
         }
 
         public void MostrarCampo()
@@ -208,6 +284,12 @@ namespace NT Warriors
             Console.WriteLine($"- Fileira Superior (Lacaios): {string.Join(", ", CampoSuperior.Select(c => c.Nome))}");
             Console.WriteLine($"- Herói Ativo (Meio): {HeroiAtivo?.Nome ?? "Nenhum"}");
             Console.WriteLine($"- Herói Suporte (Inferior): {HeroiSuporte?.Nome ?? "Nenhum"}");
+        }
+
+        public void RecuperarEnergia()
+        {
+            EnergiaTotal += 2; // Recupera 2 pontos de energia por turno
+            Console.WriteLine($"{Nome} recuperou 2 pontos de energia. Energia total: {EnergiaTotal}");
         }
 
         public static void MostrarSucata()
@@ -220,20 +302,24 @@ namespace NT Warriors
     {
         static void Main(string[] args)
         {
-            // Exemplo de decks com heróis e lacaios
+            // Exemplo de decks com heróis, lacaios, ações e equipamentos
             List<Carta> deck1 = new List<Carta>
             {
-                new Carta("Mega Man", "Herói", "Neutro", 0, 3000, 2500, null),
-                new Carta("Mega Man - Suporte", "Herói", "Neutro", 0, 1000, 1000, null),
-                new Carta("Lacaio 1", "Lacaio", "Neutro", 2, 1500, 1000, null),
-                new Carta("Lacaio 2", "Lacaio", "Neutro", 2, 1400, 1200, null)
+                new Carta("Mega Man", "Herói", "Neutro", 2, 3000, 2500, null), // Energia = 2 (para atacar)
+                new Carta("Mega Man - Suporte", "Herói", "Neutro", 1, 1000, 1000, null), // Energia = 1 (para atacar)
+                new Carta("Lacaio 1", "Lacaio", "Neutro", 1, 1500, 1000, null), // Energia = 1 (para atacar)
+                new Carta("Lacaio 2", "Lacaio", "Neutro", 1, 1400, 1200, null), // Energia = 1 (para atacar)
+                new Carta("Ataque Poderoso", "Ação", "Neutro", 3, 0, 0, null), // Energia = 3 (custo para jogar)
+                new Carta("Escudo de Energia", "Equipamento", "Neutro", 2, 0, 0, null) // Energia = 2 (custo para jogar)
             };
             List<Carta> deck2 = new List<Carta>
             {
-                new Carta("Proto Man", "Herói", "Fogo", 0, 2500, 2000, null),
-                new Carta("Proto Man - Suporte", "Herói", "Fogo", 0, 1000, 1000, null),
-                new Carta("Lacaio 3", "Lacaio", "Fogo", 2, 1300, 1200, null),
-                new Carta("Lacaio 4", "Lacaio", "Fogo", 2, 1300, 1100, null)
+                new Carta("Proto Man", "Herói", "Fogo", 2, 2500, 2000, null), // Energia = 2 (para atacar)
+                new Carta("Proto Man - Suporte", "Herói", "Fogo", 1, 1000, 1000, null), // Energia = 1 (para atacar)
+                new Carta("Lacaio 3", "Lacaio", "Fogo", 1, 1300, 1200, null), // Energia = 1 (para atacar)
+                new Carta("Lacaio 4", "Lacaio", "Fogo", 1, 1300, 1100, null), // Energia = 1 (para atacar)
+                new Carta("Ataque Flamejante", "Ação", "Fogo", 3, 0, 0, null), // Energia = 3 (custo para jogar)
+                new Carta("Escudo de Fogo", "Equipamento", "Fogo", 2, 0, 0, null) // Energia = 2 (custo para jogar)
             };
 
             Jogador jogador1 = new Jogador("Jogador 1", deck1, deck1);
@@ -244,12 +330,12 @@ namespace NT Warriors
 
             // Fase de colocar heróis em campo
             Console.WriteLine($"{jogador1.Nome}, escolha 2 heróis para colocar em campo:");
-            jogador1.MostrarMao();
+            jogador1.MostrarCampo();
             jogador1.JogarCarta(jogador1.Mao.First(c => c.Tipo == "Herói"));
             jogador1.JogarCarta(jogador1.Mao.First(c => c.Tipo == "Herói"));
 
             Console.WriteLine($"{jogador2.Nome}, escolha 2 heróis para colocar em campo:");
-            jogador2.MostrarMao();
+            jogador2.MostrarCampo();
             jogador2.JogarCarta(jogador2.Mao.First(c => c.Tipo == "Herói"));
             jogador2.JogarCarta(jogador2.Mao.First(c => c.Tipo == "Herói"));
 
@@ -261,7 +347,10 @@ namespace NT Warriors
                 Console.Clear();
                 Console.WriteLine($"Turno {turno} - {jogadorAtual.Nome}'s vez!");
 
-                // No início do turno, o jogador deve comprar uma carta do baralho principal
+                // Recuperar energia no início do turno
+                jogadorAtual.RecuperarEnergia();
+
+                // Comprar uma carta no início do turno
                 jogadorAtual.ComprarCarta(jogadorAtual.DeckPrincipal);
 
                 // Verificar se o jogador tem 2 heróis no campo
@@ -280,23 +369,21 @@ namespace NT Warriors
 
                 if (escolha == "1")
                 {
-                    // Jogador ataca
                     jogadorAtual.Atacar(jogadorAdversario);
                 }
                 else if (escolha == "2")
                 {
-                    // Jogador escolhe uma carta para jogar
                     Console.WriteLine("Escolha uma carta para jogar:");
                     for (int i = 0; i < jogadorAtual.Mao.Count; i++)
                     {
                         Console.WriteLine($"{i + 1}. {jogadorAtual.Mao[i].Nome}");
                     }
 
-                    int cartaEscolhida = int.Parse(Console.ReadLine()) - 1;
-
-                    if (cartaEscolhida >= 0 && cartaEscolhida < jogadorAtual.Mao.Count)
+                    int cartaEscolhida;
+                    bool entradaValida = int.TryParse(Console.ReadLine(), out cartaEscolhida);
+                    if (entradaValida && cartaEscolhida >= 1 && cartaEscolhida <= jogadorAtual.Mao.Count)
                     {
-                        jogadorAtual.JogarCarta(jogadorAtual.Mao[cartaEscolhida]);
+                        jogadorAtual.JogarCarta(jogadorAtual.Mao[cartaEscolhida - 1]);
                     }
                     else
                     {
@@ -308,6 +395,7 @@ namespace NT Warriors
                 if (jogadorAdversario.VerificarDerrota())
                 {
                     Console.WriteLine($"{jogadorAdversario.Nome} perdeu o jogo!");
+                    Console.WriteLine($"{jogadorAtual.Nome} venceu em {turno} turnos!");
                     jogoAtivo = false;
                 }
 
