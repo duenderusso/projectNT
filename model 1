@@ -47,6 +47,7 @@ namespace NTWarriors
     {
         public string Nome { get; set; }
         public int EnergiaTotal { get; set; }
+        public int EnergiaMaxima { get; set; } = 1; // Energia máxima começa em 1
         public List<Carta> Mao { get; set; }
         public List<Carta> DeckPrincipal { get; set; }
         public List<Carta> DeckHerois { get; set; }
@@ -59,7 +60,7 @@ namespace NTWarriors
         public Jogador(string nome, List<Carta> deckPrincipal, List<Carta> deckHerois)
         {
             Nome = nome;
-            EnergiaTotal = 10;
+            EnergiaTotal = EnergiaMaxima; // Energia inicial igual à energia máxima
             Mao = new List<Carta>();
             DeckPrincipal = deckPrincipal;
             DeckHerois = deckHerois;
@@ -107,6 +108,21 @@ namespace NTWarriors
             {
                 Console.WriteLine($"{Nome} não tem mais cartas no deck e perdeu o jogo!");
                 HeroisDestruídos = 3; // Força a derrota
+            }
+        }
+
+        public void TrocarHerois()
+        {
+            if (HeroiAtivo != null && HeroiSuporte != null)
+            {
+                var temp = HeroiAtivo;
+                HeroiAtivo = HeroiSuporte;
+                HeroiSuporte = temp;
+                Console.WriteLine($"{Nome} trocou o herói ativo por {HeroiAtivo.Nome}.");
+            }
+            else
+            {
+                Console.WriteLine("Não é possível trocar heróis. Verifique se ambos os heróis estão em campo.");
             }
         }
 
@@ -324,8 +340,17 @@ namespace NTWarriors
 
         public void RecuperarEnergia()
         {
-            EnergiaTotal += 2;
-            Console.WriteLine($"{Nome} recuperou 2 pontos de energia. Energia total: {EnergiaTotal}");
+            EnergiaTotal = EnergiaMaxima; // Regenera a energia total no início do turno
+            Console.WriteLine($"{Nome} recuperou energia. Energia total: {EnergiaTotal}");
+        }
+
+        public void AumentarEnergiaMaxima()
+        {
+            if (EnergiaMaxima < 6) // Limite máximo de 6
+            {
+                EnergiaMaxima++;
+                Console.WriteLine($"{Nome} ganhou +1 de energia máxima. Energia máxima: {EnergiaMaxima}");
+            }
         }
 
         public static void MostrarSucata()
@@ -386,7 +411,9 @@ namespace NTWarriors
                 Console.Clear();
                 Console.WriteLine($"Turno {turno} - {jogadorAtual.Nome}'s vez!");
 
+                // Regenera energia e aumenta energia máxima
                 jogadorAtual.RecuperarEnergia();
+                jogadorAtual.AumentarEnergiaMaxima();
 
                 // Verificar se o jogador pode sacar uma carta
                 if (jogadorAtual.DeckPrincipal.Count > 0)
@@ -403,6 +430,14 @@ namespace NTWarriors
                 jogadorAtual.VerificarHeróisNoCampo();
                 jogadorAtual.MostrarCampo();
                 jogadorAdversario.MostrarCampo();
+
+                // Opção de trocar heróis
+                Console.WriteLine("\nDeseja trocar a posição do herói ativo e do herói de suporte? (s/n)");
+                string trocar = Console.ReadLine();
+                if (trocar.ToLower() == "s")
+                {
+                    jogadorAtual.TrocarHerois();
+                }
 
                 Console.WriteLine("\nO que você quer fazer?");
                 Console.WriteLine("1. Atacar");
