@@ -10,11 +10,11 @@ namespace NTWarriors
         public string Nome { get; set; }
         public string Tipo { get; set; }
         public string Elemento { get; set; }
-        public int Energia { get; set; } // Usada para atacar ou habilidades
+        public int Energia { get; set; }
         public int Poder { get; set; }
         public int Resistencia { get; set; }
         public List<Habilidade> Habilidades { get; set; }
-        public bool PodeAtacar { get; set; } // Lacaios não podem atacar
+        public bool PodeAtacar { get; set; }
 
         public Carta(string nome, string tipo, string elemento, int energia, int poder, int resistencia, List<Habilidade> habilidades)
         {
@@ -25,7 +25,7 @@ namespace NTWarriors
             Poder = poder;
             Resistencia = resistencia;
             Habilidades = habilidades ?? new List<Habilidade>();
-            PodeAtacar = false; // Lacaios não podem atacar
+            PodeAtacar = false;
         }
 
         public void Destruir()
@@ -65,9 +65,20 @@ namespace NTWarriors
             DeckHerois = deckHerois;
             CampoSuperior = new List<Carta>();
 
+            // Validação dos decks
+            if (DeckPrincipal.Count < 20 || DeckPrincipal.Count > 25)
+            {
+                throw new ArgumentException("O deck principal deve ter entre 20 e 25 cartas.");
+            }
+            if (DeckHerois.Count != 5)
+            {
+                throw new ArgumentException("O deck de heróis deve ter exatamente 5 cartas.");
+            }
+
             EmbaralharDeck(DeckPrincipal);
             EmbaralharDeck(DeckHerois);
 
+            // Sacar 3 cartas do deck principal e 3 do deck de heróis
             for (int i = 0; i < 3; i++)
             {
                 ComprarCarta(DeckPrincipal);
@@ -92,19 +103,23 @@ namespace NTWarriors
                 Mao.Add(deck[0]);
                 deck.RemoveAt(0);
             }
+            else
+            {
+                Console.WriteLine($"{Nome} não tem mais cartas no deck e perdeu o jogo!");
+                HeroisDestruídos = 3; // Força a derrota
+            }
         }
 
         public void JogarCarta(Carta carta)
         {
             if (Mao.Contains(carta))
             {
-                // Verifica se a carta é do tipo Ação ou Equipamento
                 if (carta.Tipo == "Ação" || carta.Tipo == "Equipamento")
                 {
                     if (EnergiaTotal >= carta.Energia)
                     {
                         Mao.Remove(carta);
-                        EnergiaTotal -= carta.Energia; // Gasta energia apenas para ações/equipamentos
+                        EnergiaTotal -= carta.Energia;
                     }
                     else
                     {
@@ -114,7 +129,7 @@ namespace NTWarriors
                 }
                 else
                 {
-                    Mao.Remove(carta); // Heróis e lacaios não gastam energia para serem jogados
+                    Mao.Remove(carta);
                 }
 
                 if (carta.Tipo == "Herói")
@@ -145,7 +160,6 @@ namespace NTWarriors
                 }
                 else if (carta.Tipo == "Ação" || carta.Tipo == "Equipamento")
                 {
-                    // Lógica para ativar ações ou equipamentos
                     Console.WriteLine($"{carta.Nome} foi jogada com sucesso!");
                 }
             }
@@ -159,18 +173,15 @@ namespace NTWarriors
         {
             if (HeroiAtivo != null && CampoSuperior.Count > 0)
             {
-                // Verifica se o jogador tem energia suficiente para atacar com o herói ativo
                 if (EnergiaTotal >= HeroiAtivo.Energia)
                 {
-                    EnergiaTotal -= HeroiAtivo.Energia; // Gasta energia para atacar
+                    EnergiaTotal -= HeroiAtivo.Energia;
 
                     int dano = HeroiAtivo.Poder;
                     Console.WriteLine($"{Nome} atacou com {HeroiAtivo.Nome} causando {dano} de dano!");
 
-                    // Jogador defensor escolhe como bloquear o dano
                     List<Carta> lacaiosUsados = adversario.EscolherLacaiosParaDefesa(dano);
 
-                    // Aplicar dano restante ao herói ativo do adversário
                     if (dano > 0 && adversario.HeroiAtivo != null)
                     {
                         adversario.HeroiAtivo.Resistencia -= dano;
@@ -187,7 +198,6 @@ namespace NTWarriors
                         }
                     }
 
-                    // Lacaios contra-atacam
                     foreach (var lacaio in adversario.CampoSuperior.ToList())
                     {
                         if (lacaio.Resistencia > 0)
@@ -273,6 +283,11 @@ namespace NTWarriors
                 Mao.Add(novoHeroi);
                 Console.WriteLine($"{Nome} sacou um novo herói: {novoHeroi.Nome}");
             }
+            else
+            {
+                Console.WriteLine($"{Nome} não tem mais heróis no deck e perdeu o jogo!");
+                HeroisDestruídos = 3; // Força a derrota
+            }
         }
 
         public void VerificarHeróisNoCampo()
@@ -296,7 +311,7 @@ namespace NTWarriors
 
         public bool VerificarDerrota()
         {
-            return HeroisDestruídos >= 3; // Verifica se 3 heróis foram destruídos
+            return HeroisDestruídos >= 3;
         }
 
         public void MostrarCampo()
@@ -309,7 +324,7 @@ namespace NTWarriors
 
         public void RecuperarEnergia()
         {
-            EnergiaTotal += 2; // Recupera 2 pontos de energia por turno
+            EnergiaTotal += 2;
             Console.WriteLine($"{Nome} recuperou 2 pontos de energia. Energia total: {EnergiaTotal}");
         }
 
@@ -323,42 +338,45 @@ namespace NTWarriors
     {
         static void Main(string[] args)
         {
-            // Exemplo de decks com heróis, lacaios, ações e equipamentos
-            List<Carta> deck1 = new List<Carta>
+            // Exemplo de decks
+            List<Carta> deckPrincipal1 = new List<Carta>
             {
-                new Carta("Mega Man", "Herói", "Neutro", 2, 3000, 2500, null), // Energia = 2 (para atacar)
-                new Carta("Mega Man - Suporte", "Herói", "Neutro", 1, 1000, 1000, null), // Energia = 1 (para atacar)
-                new Carta("Lacaio 1", "Lacaio", "Neutro", 1, 500, 1000, null), // Poder = 500 (para contra-atacar)
-                new Carta("Lacaio 2", "Lacaio", "Neutro", 1, 600, 1200, null), // Poder = 600 (para contra-atacar)
-                new Carta("Ataque Poderoso", "Ação", "Neutro", 3, 0, 0, null), // Energia = 3 (custo para jogar)
-                new Carta("Escudo de Energia", "Equipamento", "Neutro", 2, 0, 0, null) // Energia = 2 (custo para jogar)
-            };
-            List<Carta> deck2 = new List<Carta>
-            {
-                new Carta("Proto Man", "Herói", "Fogo", 2, 2500, 2000, null), // Energia = 2 (para atacar)
-                new Carta("Proto Man - Suporte", "Herói", "Fogo", 1, 1000, 1000, null), // Energia = 1 (para atacar)
-                new Carta("Lacaio 3", "Lacaio", "Fogo", 1, 500, 1200, null), // Poder = 500 (para contra-atacar)
-                new Carta("Lacaio 4", "Lacaio", "Fogo", 1, 600, 1100, null), // Poder = 600 (para contra-atacar)
-                new Carta("Ataque Flamejante", "Ação", "Fogo", 3, 0, 0, null), // Energia = 3 (custo para jogar)
-                new Carta("Escudo de Fogo", "Equipamento", "Fogo", 2, 0, 0, null) // Energia = 2 (custo para jogar)
+                new Carta("Metall", "Lacaio", "Metal", 0, 0, 600, new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Reprodução em Massa",
+                        Tipo = "Passiva",
+                        Descricao = "Você pode incluir até 4 cópias desta carta no seu deck principal."
+                    }
+                }),
+                new Carta("Sniper Joe", "Lacaio", "Neutro", 0, 600, 1200, null),
+                new Carta("Ataque Poderoso", "Ação", "Neutro", 3, 0, 0, null),
+                new Carta("Escudo de Energia", "Equipamento", "Neutro", 2, 0, 0, null)
             };
 
-            Jogador jogador1 = new Jogador("Jogador 1", deck1, deck1);
-            Jogador jogador2 = new Jogador("Jogador 2", deck2, deck2);
+            List<Carta> deckHerois1 = new List<Carta>
+            {
+                new Carta("Mega Man", "Herói", "Neutro", 2, 2000, 5000, new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Adaptação de Combate",
+                        Tipo = "Passiva",
+                        Descricao = "Quando um herói adversário é destruído, copia a habilidade passiva dele e ganha +1000 de Poder (efeito não acumulativo)."
+                    }
+                }),
+                new Carta("Proto Man", "Herói", "Fogo", 2, 2500, 2000, null),
+                new Carta("Roll", "Herói", "Neutro", 1, 1500, 2000, null),
+                new Carta("Bass", "Herói", "Escuro", 3, 3500, 3000, null),
+                new Carta("Zero", "Herói", "Luz", 3, 4000, 3500, null)
+            };
+
+            Jogador jogador1 = new Jogador("Jogador 1", deckPrincipal1, deckHerois1);
+            Jogador jogador2 = new Jogador("Jogador 2", deckPrincipal1, deckHerois1);
 
             bool jogoAtivo = true;
             int turno = 1;
-
-            // Fase de colocar heróis em campo
-            Console.WriteLine($"{jogador1.Nome}, escolha 2 heróis para colocar em campo:");
-            jogador1.MostrarCampo();
-            jogador1.JogarCarta(jogador1.Mao.First(c => c.Tipo == "Herói"));
-            jogador1.JogarCarta(jogador1.Mao.First(c => c.Tipo == "Herói"));
-
-            Console.WriteLine($"{jogador2.Nome}, escolha 2 heróis para colocar em campo:");
-            jogador2.MostrarCampo();
-            jogador2.JogarCarta(jogador2.Mao.First(c => c.Tipo == "Herói"));
-            jogador2.JogarCarta(jogador2.Mao.First(c => c.Tipo == "Herói"));
 
             while (jogoAtivo)
             {
@@ -368,20 +386,24 @@ namespace NTWarriors
                 Console.Clear();
                 Console.WriteLine($"Turno {turno} - {jogadorAtual.Nome}'s vez!");
 
-                // Recuperar energia no início do turno
                 jogadorAtual.RecuperarEnergia();
 
-                // Comprar uma carta no início do turno
-                jogadorAtual.ComprarCarta(jogadorAtual.DeckPrincipal);
+                // Verificar se o jogador pode sacar uma carta
+                if (jogadorAtual.DeckPrincipal.Count > 0)
+                {
+                    jogadorAtual.ComprarCarta(jogadorAtual.DeckPrincipal);
+                }
+                else
+                {
+                    Console.WriteLine($"{jogadorAtual.Nome} não tem mais cartas no deck e perdeu o jogo!");
+                    jogoAtivo = false;
+                    break;
+                }
 
-                // Verificar se o jogador tem 2 heróis no campo
                 jogadorAtual.VerificarHeróisNoCampo();
-
-                // Mostrar o campo atual de cada jogador
                 jogadorAtual.MostrarCampo();
                 jogadorAdversario.MostrarCampo();
 
-                // Jogador decide as ações: atacar ou jogar uma carta
                 Console.WriteLine("\nO que você quer fazer?");
                 Console.WriteLine("1. Atacar");
                 Console.WriteLine("2. Jogar uma carta");
@@ -412,7 +434,6 @@ namespace NTWarriors
                     }
                 }
 
-                // Verificar o estado do jogo
                 if (jogadorAdversario.VerificarDerrota())
                 {
                     Console.WriteLine($"{jogadorAdversario.Nome} perdeu o jogo!");
@@ -421,13 +442,8 @@ namespace NTWarriors
                 }
 
                 turno++;
-                Thread.Sleep(2000); // Espera de 2 segundos para o próximo turno
+                Thread.Sleep(2000);
             }
-
-            Console.WriteLine("Fim do jogo!");
-        }
-    }
-}
 
             Console.WriteLine("Fim do jogo!");
         }
