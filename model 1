@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace NT Warriors
+namespace NTWarriors
 {
     class Carta
     {
@@ -186,6 +186,27 @@ namespace NT Warriors
                             adversario.SacarNovoHeroi();
                         }
                     }
+
+                    // Lacaios contra-atacam
+                    foreach (var lacaio in adversario.CampoSuperior.ToList())
+                    {
+                        if (lacaio.Resistencia > 0)
+                        {
+                            HeroiAtivo.Resistencia -= lacaio.Poder;
+                            Console.WriteLine($"{lacaio.Nome} contra-atacou {HeroiAtivo.Nome}, reduzindo {lacaio.Poder} de resistência!");
+
+                            if (HeroiAtivo.Resistencia <= 0)
+                            {
+                                Sucata.Add(HeroiAtivo);
+                                HeroiAtivo = null;
+                                HeroisDestruídos++;
+
+                                Console.WriteLine($"{Nome} perdeu um herói! Sacando um novo herói...");
+                                SacarNovoHeroi();
+                                break;
+                            }
+                        }
+                    }
                 }
                 else
                 {
@@ -307,8 +328,8 @@ namespace NT Warriors
             {
                 new Carta("Mega Man", "Herói", "Neutro", 2, 3000, 2500, null), // Energia = 2 (para atacar)
                 new Carta("Mega Man - Suporte", "Herói", "Neutro", 1, 1000, 1000, null), // Energia = 1 (para atacar)
-                new Carta("Lacaio 1", "Lacaio", "Neutro", 1, 1500, 1000, null), // Energia = 1 (para atacar)
-                new Carta("Lacaio 2", "Lacaio", "Neutro", 1, 1400, 1200, null), // Energia = 1 (para atacar)
+                new Carta("Lacaio 1", "Lacaio", "Neutro", 1, 500, 1000, null), // Poder = 500 (para contra-atacar)
+                new Carta("Lacaio 2", "Lacaio", "Neutro", 1, 600, 1200, null), // Poder = 600 (para contra-atacar)
                 new Carta("Ataque Poderoso", "Ação", "Neutro", 3, 0, 0, null), // Energia = 3 (custo para jogar)
                 new Carta("Escudo de Energia", "Equipamento", "Neutro", 2, 0, 0, null) // Energia = 2 (custo para jogar)
             };
@@ -316,8 +337,8 @@ namespace NT Warriors
             {
                 new Carta("Proto Man", "Herói", "Fogo", 2, 2500, 2000, null), // Energia = 2 (para atacar)
                 new Carta("Proto Man - Suporte", "Herói", "Fogo", 1, 1000, 1000, null), // Energia = 1 (para atacar)
-                new Carta("Lacaio 3", "Lacaio", "Fogo", 1, 1300, 1200, null), // Energia = 1 (para atacar)
-                new Carta("Lacaio 4", "Lacaio", "Fogo", 1, 1300, 1100, null), // Energia = 1 (para atacar)
+                new Carta("Lacaio 3", "Lacaio", "Fogo", 1, 500, 1200, null), // Poder = 500 (para contra-atacar)
+                new Carta("Lacaio 4", "Lacaio", "Fogo", 1, 600, 1100, null), // Poder = 600 (para contra-atacar)
                 new Carta("Ataque Flamejante", "Ação", "Fogo", 3, 0, 0, null), // Energia = 3 (custo para jogar)
                 new Carta("Escudo de Fogo", "Equipamento", "Fogo", 2, 0, 0, null) // Energia = 2 (custo para jogar)
             };
@@ -402,6 +423,11 @@ namespace NT Warriors
                 turno++;
                 Thread.Sleep(2000); // Espera de 2 segundos para o próximo turno
             }
+
+            Console.WriteLine("Fim do jogo!");
+        }
+    }
+}
 
             Console.WriteLine("Fim do jogo!");
         }
