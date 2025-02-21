@@ -125,10 +125,27 @@ public static class CartasEHabilidades
                 nome: "Proto Man",
                 tipo: "Herói",
                 elemento: "Neutro",
-                energia: 2,
-                poder: 2500,
+                energia: 3,
+                poder: 4000,
                 resistencia: 2000,
-                habilidades: null
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Escudo de Proteção",
+                        Tipo = "Passiva",
+                        Descricao = "Enquanto estiver na área de suporte, Proto Man pode defender o herói ativo, tomando o dano por ele.",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            if (jogador.HeroiSuporte?.Nome == "Proto Man" && jogador.HeroiAtivo != null)
+                            {
+                                Console.WriteLine("Proto Man defendeu o herói ativo!");
+                                jogador.HeroiSuporte.ReceberDano(adversario.HeroiAtivo.Poder);
+                                adversario.HeroiAtivo.Poder = 0; // Zera o dano do ataque
+                            }
+                        }
+                    }
+                }
             ),
             new Carta(
                 nome: "Roll",
