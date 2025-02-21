@@ -1,0 +1,162 @@
+using System;
+using System.Collections.Generic;
+
+public static class CartasEHabilidades
+{
+    // Lista de cartas pré-definidas
+    public static List<Carta> CriarDeckPrincipal()
+    {
+        return new List<Carta>
+        {
+            new Carta(
+                nome: "Metall",
+                tipo: "Lacaio",
+                elemento: "Neutro",
+                energia: 0,
+                poder: 0,
+                resistencia: 600,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Reprodução em Massa",
+                        Tipo = "Passiva",
+                        Descricao = "Você pode incluir até 4 cópias desta carta no seu deck principal.",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            Console.WriteLine("Reprodução em Massa: Você pode incluir até 4 cópias desta carta no seu deck principal.");
+                        }
+                    }
+                }
+            ),
+            new Carta(
+                nome: "Sniper Joe",
+                tipo: "Lacaio",
+                elemento: "Neutro",
+                energia: 0,
+                poder: 600,
+                resistencia: 1200,
+                habilidades: null
+            ),
+            new Carta(
+                nome: "Ataque Poderoso",
+                tipo: "Ação",
+                elemento: "Neutro",
+                energia: 3,
+                poder: 0,
+                resistencia: 0,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Ataque Poderoso",
+                        Tipo = "Ativa",
+                        Descricao = "Causa 1000 de dano ao herói adversário.",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            if (adversario.HeroiAtivo != null)
+                            {
+                                adversario.HeroiAtivo.Resistencia -= 1000;
+                                Console.WriteLine($"{adversario.HeroiAtivo.Nome} sofreu 1000 de dano!");
+                            }
+                        }
+                    }
+                }
+            ),
+            new Carta(
+                nome: "Escudo de Energia",
+                tipo: "Equipamento",
+                elemento: "Neutro",
+                energia: 2,
+                poder: 0,
+                resistencia: 0,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Escudo de Energia",
+                        Tipo = "Ativa",
+                        Descricao = "Aumenta a resistência do herói ativo em 500.",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            if (jogador.HeroiAtivo != null)
+                            {
+                                jogador.HeroiAtivo.Resistencia += 500;
+                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} ganhou 500 de resistência!");
+                            }
+                        }
+                    }
+                }
+            )
+        };
+    }
+
+    // Lista de heróis pré-definidos
+    public static List<Carta> CriarDeckHerois()
+    {
+        return new List<Carta>
+        {
+            new Carta(
+                nome: "Mega Man",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 2,
+                poder: 2000,
+                resistencia: 5000,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Adaptação de Combate",
+                        Tipo = "Passiva",
+                        Descricao = "Quando um herói adversário é destruído, copia a habilidade passiva dele e ganha +1000 de Poder (efeito não acumulativo).",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            if (adversario.HeroiAtivo == null)
+                            {
+                                jogador.HeroiAtivo.Poder += 1000;
+                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} ganhou +1000 de Poder!");
+                            }
+                        }
+                    }
+                }
+            ),
+            new Carta(
+                nome: "Proto Man",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 2,
+                poder: 2500,
+                resistencia: 2000,
+                habilidades: null
+            ),
+            new Carta(
+                nome: "Roll",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 1,
+                poder: 1500,
+                resistencia: 2000,
+                habilidades: null
+            ),
+            new Carta(
+                nome: "Bass",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 3,
+                poder: 3500,
+                resistencia: 4000,
+                habilidades: null
+            ),
+            new Carta(
+                nome: "Zero",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 3,
+                poder: 4000,
+                resistencia: 3500,
+                habilidades: null
+            )
+        };
+    }
+}
