@@ -366,7 +366,7 @@ namespace NTWarriors
             // Exemplo de decks
             List<Carta> deckPrincipal1 = new List<Carta>
             {
-                new Carta("Metall", "Lacaio", "Metal", 0, 0, 600, new List<Habilidade>
+                new Carta("Metall", "Lacaio", "Neutro", 0, 0, 600, new List<Habilidade>
                 {
                     new Habilidade
                     {
@@ -393,8 +393,8 @@ namespace NTWarriors
                 }),
                 new Carta("Proto Man", "Herói", "Fogo", 2, 2500, 2000, null),
                 new Carta("Roll", "Herói", "Neutro", 1, 1500, 2000, null),
-                new Carta("Bass", "Herói", "Escuro", 3, 3500, 3000, null),
-                new Carta("Zero", "Herói", "Luz", 3, 4000, 3500, null)
+                new Carta("Bass", "Herói", "Neutro", 3, 3500, 4000, null),
+                new Carta("Zero", "Herói", "Neutro", 3, 4000, 3500, null)
             };
 
             Jogador jogador1 = new Jogador("Jogador 1", deckPrincipal1, deckHerois1);
