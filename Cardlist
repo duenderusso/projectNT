@@ -20,12 +20,12 @@ public static class CartasEHabilidades
                 {
                     new Habilidade
                     {
-                        Nome = "Reprodução em Massa",
+                        Nome = "Produção em Massa",
                         Tipo = "Passiva",
                         Descricao = "Você pode incluir até 4 cópias desta carta no seu deck principal.",
                         Ativar = (jogador, adversario) =>
                         {
-                            Console.WriteLine("Reprodução em Massa: Você pode incluir até 4 cópias desta carta no seu deck principal.");
+                            Console.WriteLine("Produção em Massa: Você pode incluir até 4 cópias desta carta no seu deck principal.");
                         }
                     }
                 }
@@ -88,6 +88,50 @@ public static class CartasEHabilidades
                         }
                     }
                 }
+            ),
+            new Carta(
+                nome: "Elebee",
+                tipo: "Lacaio",
+                elemento: "Raio",
+                energia: 0,
+                poder: 300,
+                resistencia: 100,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Invisível",
+                        Tipo = "Passiva",
+                        Descricao = "Não pode ser alvo de ataques nem habilidades do jogador adversário.",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            // A habilidade é passiva, então não precisa de lógica de ativação.
+                            // A restrição de não ser alvo é implementada na lógica do jogo.
+                        }
+                    }
+                }
+            ),
+            new Carta(
+                nome: "Protecto",
+                tipo: "Lacaio",
+                elemento: "Neutro",
+                energia: 0,
+                poder: 0,
+                resistencia: 600,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Reciclagem Automática",
+                        Tipo = "Passiva",
+                        Descricao = "Sempre que for destruído, jogue um novo Protecto do baralho ou da pilha de sucata (se tiver).",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            // A habilidade é passiva, então não precisa de lógica de ativação.
+                            // A lógica de substituição será implementada no sistema de destruição de cartas.
+                        }
+                    }
+                }
             )
         };
     }
@@ -110,7 +154,7 @@ public static class CartasEHabilidades
                     {
                         Nome = "Adaptação de Combate",
                         Tipo = "Passiva",
-                        Descricao = "Sempre que um herói adversário é destruído, pode copiar qualquer habilidade dele. Não pode copiar mais de uma habilidade.",
+                        Descricao = "Sempre que um herói adversário é destruído, pode copiar qualquer habilidade dele. Não copiar mais de uma habilidade.",
                         Ativar = (jogador, adversario) =>
                         {
                             if (adversario.HeroisDestruídos > jogador.HeroisDestruídos) // Verifica se o adversário perdeu um herói
