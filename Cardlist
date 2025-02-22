@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public static class CartasEHabilidades
 {
@@ -109,49 +110,49 @@ public static class CartasEHabilidades
                     {
                         Nome = "Adaptação de Combate",
                         Tipo = "Passiva",
-                        Descricao = "Sempre que um herói adversário é destruído, pode copiar qualquer habilidade dele. Não copiar mais de uma habilidade.",
+                        Descricao = "Sempre que um herói adversário é destruído, pode copiar qualquer habilidade dele. Não pode copiar mais de uma habilidade.",
                         Ativar = (jogador, adversario) =>
                         {
                             if (adversario.HeroisDestruídos > jogador.HeroisDestruídos) // Verifica se o adversário perdeu um herói
                             {
                                 var ultimoHeroiDestruido = adversario.Sucata.LastOrDefault(c => c.Tipo == "Herói");
-                                  if (ultimoHeroiDestruido != null && ultimoHeroiDestruido.Habilidades != null)
-                                  {
-                        // Exibe as habilidades disponíveis para copiar
-                        Console.WriteLine($"Escolha uma habilidade do {ultimoHeroiDestruido.Nome} para copiar:");
-                        for (int i = 0; i < ultimoHeroiDestruido.Habilidades.Count; i++)
-                        {
-                            Console.WriteLine($"{i + 1}. {ultimoHeroiDestruido.Habilidades[i].Nome}");
-                        }
+                                if (ultimoHeroiDestruido != null && ultimoHeroiDestruido.Habilidades != null)
+                                {
+                                    // Exibe as habilidades disponíveis para copiar
+                                    Console.WriteLine($"Escolha uma habilidade do {ultimoHeroiDestruido.Nome} para copiar:");
+                                    for (int i = 0; i < ultimoHeroiDestruido.Habilidades.Count; i++)
+                                    {
+                                        Console.WriteLine($"{i + 1}. {ultimoHeroiDestruido.Habilidades[i].Nome}");
+                                    }
 
-                        // Solicita a escolha do jogador
-                        int escolha;
-                        bool escolhaValida = int.TryParse(Console.ReadLine(), out escolha);
-                        if (escolhaValida && escolha >= 1 && escolha <= ultimoHeroiDestruido.Habilidades.Count)
-                        {
-                            var habilidadeParaCopiar = ultimoHeroiDestruido.Habilidades[escolha - 1];
+                                    // Solicita a escolha do jogador
+                                    int escolha;
+                                    bool escolhaValida = int.TryParse(Console.ReadLine(), out escolha);
+                                    if (escolhaValida && escolha >= 1 && escolha <= ultimoHeroiDestruido.Habilidades.Count)
+                                    {
+                                        var habilidadeParaCopiar = ultimoHeroiDestruido.Habilidades[escolha - 1];
 
-                            // Verifica se a habilidade já foi copiada
-                            if (!jogador.HeroiAtivo.Habilidades.Any(h => h.Nome == habilidadeParaCopiar.Nome))
-                            {
-                                jogador.HeroiAtivo.Habilidades.Add(habilidadeParaCopiar);
-                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} copiou a habilidade '{habilidadeParaCopiar.Nome}' do {ultimoHeroiDestruido.Nome}!");
+                                        // Verifica se a habilidade já foi copiada
+                                        if (!jogador.HeroiAtivo.Habilidades.Any(h => h.Nome == habilidadeParaCopiar.Nome))
+                                        {
+                                            jogador.HeroiAtivo.Habilidades.Add(habilidadeParaCopiar);
+                                            Console.WriteLine($"{jogador.HeroiAtivo.Nome} copiou a habilidade '{habilidadeParaCopiar.Nome}' do {ultimoHeroiDestruido.Nome}!");
+                                        }
+                                        else
+                                        {
+                                            Console.WriteLine($"{jogador.HeroiAtivo.Nome} já possui a habilidade '{habilidadeParaCopiar.Nome}'.");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("Escolha inválida. Nenhuma habilidade foi copiada.");
+                                    }
+                                }
                             }
-                            else
-                            {
-                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} já possui a habilidade '{habilidadeParaCopiar.Nome}'.");
-                            }
-                        }
-                        else
-                        {
-                            Console.WriteLine("Escolha inválida. Nenhuma habilidade foi copiada.");
                         }
                     }
                 }
-            }
-        }
-    }
-),
+            ),
             new Carta(
                 nome: "Proto Man",
                 tipo: "Herói",
@@ -168,7 +169,7 @@ public static class CartasEHabilidades
                         Descricao = "Enquanto estiver na área de suporte, Proto Man pode defender o herói ativo, tomando o dano por ele.",
                         Ativar = (jogador, adversario) =>
                         {
-                            if (jogador.HeroiSuporte?.Nome == "Proto Man" && jogador.HeroiAtivo != null)
+                            if (jogador.HeroiSuporte?.Nome == "Proto Man" && jogador.HeroiAtivo != null && adversario.HeroiAtivo != null)
                             {
                                 Console.WriteLine("Proto Man defendeu o herói ativo!");
                                 jogador.HeroiSuporte.ReceberDano(adversario.HeroiAtivo.Poder);
@@ -207,4 +208,43 @@ public static class CartasEHabilidades
             )
         };
     }
+}
+
+public class Carta
+{
+    public string Nome { get; set; }
+    public string Tipo { get; set; }
+    public string Elemento { get; set; }
+    public int Energia { get; set; }
+    public int Poder { get; set; }
+    public int Resistencia { get; set; }
+    public List<Habilidade> Habilidades { get; set; }
+
+    public Carta(string nome, string tipo, string elemento, int energia, int poder, int resistencia, List<Habilidade> habilidades)
+    {
+        Nome = nome;
+        Tipo = tipo;
+        Elemento = elemento;
+        Energia = energia;
+        Poder = poder;
+        Resistencia = resistencia;
+        Habilidades = habilidades ?? new List<Habilidade>();
+    }
+
+    public void ReceberDano(int dano)
+    {
+        Resistencia -= dano;
+        if (Resistencia < 0)
+        {
+            Resistencia = 0;
+        }
+    }
+}
+
+public class Habilidade
+{
+    public string Nome { get; set; }
+    public string Tipo { get; set; }
+    public string Descricao { get; set; }
+    public Action<Jogador, Jogador> Ativar { get; set; }
 }
