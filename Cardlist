@@ -109,18 +109,49 @@ public static class CartasEHabilidades
                     {
                         Nome = "Adaptação de Combate",
                         Tipo = "Passiva",
-                        Descricao = "Quando um herói adversário é destruído, copia a habilidade passiva dele e ganha +1000 de Poder (efeito não acumulativo).",
+                        Descricao = "Sempre que um herói adversário é destruído, pode copiar qualquer habilidade dele. Não copiar mais de uma habilidade.",
                         Ativar = (jogador, adversario) =>
                         {
-                            if (adversario.HeroiAtivo == null)
+                            if (adversario.HeroisDestruídos > jogador.HeroisDestruídos) // Verifica se o adversário perdeu um herói
                             {
-                                jogador.HeroiAtivo.Poder += 1000;
-                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} ganhou +1000 de Poder!");
+                                var ultimoHeroiDestruido = adversario.Sucata.LastOrDefault(c => c.Tipo == "Herói");
+                                  if (ultimoHeroiDestruido != null && ultimoHeroiDestruido.Habilidades != null)
+                                  {
+                        // Exibe as habilidades disponíveis para copiar
+                        Console.WriteLine($"Escolha uma habilidade do {ultimoHeroiDestruido.Nome} para copiar:");
+                        for (int i = 0; i < ultimoHeroiDestruido.Habilidades.Count; i++)
+                        {
+                            Console.WriteLine($"{i + 1}. {ultimoHeroiDestruido.Habilidades[i].Nome}");
+                        }
+
+                        // Solicita a escolha do jogador
+                        int escolha;
+                        bool escolhaValida = int.TryParse(Console.ReadLine(), out escolha);
+                        if (escolhaValida && escolha >= 1 && escolha <= ultimoHeroiDestruido.Habilidades.Count)
+                        {
+                            var habilidadeParaCopiar = ultimoHeroiDestruido.Habilidades[escolha - 1];
+
+                            // Verifica se a habilidade já foi copiada
+                            if (!jogador.HeroiAtivo.Habilidades.Any(h => h.Nome == habilidadeParaCopiar.Nome))
+                            {
+                                jogador.HeroiAtivo.Habilidades.Add(habilidadeParaCopiar);
+                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} copiou a habilidade '{habilidadeParaCopiar.Nome}' do {ultimoHeroiDestruido.Nome}!");
                             }
+                            else
+                            {
+                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} já possui a habilidade '{habilidadeParaCopiar.Nome}'.");
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine("Escolha inválida. Nenhuma habilidade foi copiada.");
                         }
                     }
                 }
-            ),
+            }
+        }
+    }
+),
             new Carta(
                 nome: "Proto Man",
                 tipo: "Herói",
