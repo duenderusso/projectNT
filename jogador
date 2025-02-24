@@ -1,0 +1,322 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace NTWarriors
+{
+    class Jogador
+    {
+        public string Nome { get; set; }
+        public int EnergiaTotal { get; set; }
+        public int EnergiaMaxima { get; set; } = 1; // Energia máxima começa em 1
+        public List<Carta> Mao { get; set; }
+        public List<Carta> DeckPrincipal { get; set; }
+        public List<Carta> DeckHerois { get; set; }
+        public List<Carta> CampoSuperior { get; set; }
+        public Carta HeroiAtivo { get; set; }
+        public Carta HeroiSuporte { get; set; }
+        public static List<Carta> Sucata { get; set; } = new List<Carta>();
+        public int HeroisDestruídos { get; set; } = 0;
+
+        public Jogador(string nome, List<Carta> deckPrincipal, List<Carta> deckHerois)
+        {
+            Nome = nome;
+            EnergiaTotal = EnergiaMaxima; // Energia inicial igual à energia máxima
+            Mao = new List<Carta>();
+            DeckPrincipal = deckPrincipal;
+            DeckHerois = deckHerois;
+            CampoSuperior = new List<Carta>();
+
+            // Validação dos decks
+            if (DeckPrincipal.Count < 20 || DeckPrincipal.Count > 25)
+            {
+                throw new ArgumentException("O deck principal deve ter entre 20 e 25 cartas.");
+            }
+            if (DeckHerois.Count != 5)
+            {
+                throw new ArgumentException("O deck de heróis deve ter exatamente 5 cartas.");
+            }
+
+            EmbaralharDeck(DeckPrincipal);
+            EmbaralharDeck(DeckHerois);
+
+            // Sacar 3 cartas do deck principal e 3 do deck de heróis
+            for (int i = 0; i < 3; i++)
+            {
+                ComprarCarta(DeckPrincipal);
+                ComprarCarta(DeckHerois);
+            }
+        }
+
+        private void EmbaralharDeck(List<Carta> deck)
+        {
+            Random rng = new Random();
+            for (int i = deck.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (deck[i], deck[j]) = (deck[j], deck[i]);
+            }
+        }
+
+        public void ComprarCarta(List<Carta> deck)
+        {
+            if (deck.Count > 0)
+            {
+                Mao.Add(deck[0]);
+                deck.RemoveAt(0);
+            }
+            else
+            {
+                Console.WriteLine($"{Nome} não tem mais cartas no deck e perdeu o jogo!");
+                HeroisDestruídos = 3; // Força a derrota
+            }
+        }
+
+        public void TrocarHerois()
+        {
+            if (HeroiAtivo != null && HeroiSuporte != null)
+            {
+                var temp = HeroiAtivo;
+                HeroiAtivo = HeroiSuporte;
+                HeroiSuporte = temp;
+                Console.WriteLine($"{Nome} trocou o herói ativo por {HeroiAtivo.Nome}.");
+            }
+            else
+            {
+                Console.WriteLine("Não é possível trocar heróis. Verifique se ambos os heróis estão em campo.");
+            }
+        }
+
+        public void JogarCarta(Carta carta)
+        {
+            if (Mao.Contains(carta))
+            {
+                if (carta.Tipo == "Ação" || carta.Tipo == "Equipamento")
+                {
+                    if (EnergiaTotal >= carta.Energia)
+                    {
+                        Mao.Remove(carta);
+                        EnergiaTotal -= carta.Energia;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Energia insuficiente para jogar esta carta!");
+                        return;
+                    }
+                }
+                else
+                {
+                    Mao.Remove(carta);
+                }
+
+                if (carta.Tipo == "Herói")
+                {
+                    if (HeroiAtivo == null && !CampoSuperior.Any(c => c.Nome == carta.Nome))
+                    {
+                        HeroiAtivo = carta;
+                    }
+                    else if (HeroiSuporte == null && !CampoSuperior.Any(c => c.Nome == carta.Nome))
+                    {
+                        HeroiSuporte = carta;
+                    }
+                    else
+                    {
+                        Console.WriteLine("Você já tem dois heróis em campo ou herói repetido.");
+                    }
+                }
+                else if (carta.Tipo == "Lacaio")
+                {
+                    if (CampoSuperior.Count < 5)
+                    {
+                        CampoSuperior.Add(carta);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Não é possível adicionar mais lacaios. Já existem 5 lacaios no campo.");
+                    }
+                }
+                else if (carta.Tipo == "Ação" || carta.Tipo == "Equipamento")
+                {
+                    Console.WriteLine($"{carta.Nome} foi jogada com sucesso!");
+                }
+            }
+            else
+            {
+                Console.WriteLine("Carta não encontrada na mão!");
+            }
+        }
+
+        public void Atacar(Jogador adversario)
+        {
+            if (HeroiAtivo != null && CampoSuperior.Count > 0)
+            {
+                if (EnergiaTotal >= HeroiAtivo.Energia)
+                {
+                    EnergiaTotal -= HeroiAtivo.Energia;
+
+                    int dano = HeroiAtivo.Poder;
+                    Console.WriteLine($"{Nome} atacou com {HeroiAtivo.Nome} causando {dano} de dano!");
+
+                    List<Carta> lacaiosUsados = adversario.EscolherLacaiosParaDefesa(dano);
+
+                    if (dano > 0 && adversario.HeroiAtivo != null)
+                    {
+                        adversario.HeroiAtivo.Resistencia -= dano;
+                        Console.WriteLine($"{adversario.HeroiAtivo.Nome} sofreu {dano} de dano!");
+
+                        if (adversario.HeroiAtivo.Resistencia <= 0)
+                        {
+                            Sucata.Add(adversario.HeroiAtivo);
+                            adversario.HeroiAtivo = null;
+                            adversario.HeroisDestruídos++;
+
+                            Console.WriteLine($"{adversario.Nome} perdeu um herói! Sacando um novo herói...");
+                            adversario.SacarNovoHeroi();
+                        }
+                    }
+
+                    foreach (var lacaio in adversario.CampoSuperior.ToList())
+                    {
+                        if (lacaio.Resistencia > 0)
+                        {
+                            HeroiAtivo.Resistencia -= lacaio.Poder;
+                            Console.WriteLine($"{lacaio.Nome} contra-atacou {HeroiAtivo.Nome}, reduzindo {lacaio.Poder} de resistência!");
+
+                            if (HeroiAtivo.Resistencia <= 0)
+                            {
+                                Sucata.Add(HeroiAtivo);
+                                HeroiAtivo = null;
+                                HeroisDestruídos++;
+
+                                Console.WriteLine($"{Nome} perdeu um herói! Sacando um novo herói...");
+                                SacarNovoHeroi();
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Energia insuficiente para atacar!");
+                }
+            }
+        }
+
+        public List<Carta> EscolherLacaiosParaDefesa(int dano)
+        {
+            List<Carta> lacaiosUsados = new List<Carta>();
+            Console.WriteLine($"{Nome}, você está sofrendo um ataque de {dano} de dano!");
+
+            while (dano > 0 && CampoSuperior.Count > 0)
+            {
+                Console.WriteLine("Escolha um lacaio para bloquear o dano (ou digite 0 para parar):");
+                for (int i = 0; i < CampoSuperior.Count; i++)
+                {
+                    Console.WriteLine($"{i + 1}. {CampoSuperior[i].Nome} (Resistência: {CampoSuperior[i].Resistencia})");
+                }
+
+                int escolha;
+                bool entradaValida = int.TryParse(Console.ReadLine(), out escolha);
+
+                if (entradaValida && escolha >= 1 && escolha <= CampoSuperior.Count)
+                {
+                    Carta lacaioEscolhido = CampoSuperior[escolha - 1];
+                    lacaiosUsados.Add(lacaioEscolhido);
+
+                    if (lacaioEscolhido.Resistencia >= dano)
+                    {
+                        lacaioEscolhido.Resistencia -= dano;
+                        dano = 0;
+                        Console.WriteLine($"{lacaioEscolhido.Nome} bloqueou todo o dano!");
+                    }
+                    else
+                    {
+                        dano -= lacaioEscolhido.Resistencia;
+                        lacaioEscolhido.Resistencia = 0;
+                        Console.WriteLine($"{lacaioEscolhido.Nome} foi destruído!");
+                        Sucata.Add(lacaioEscolhido);
+                        CampoSuperior.Remove(lacaioEscolhido);
+                    }
+                }
+                else if (escolha == 0)
+                {
+                    break;
+                }
+                else
+                {
+                    Console.WriteLine("Escolha inválida. Tente novamente.");
+                }
+            }
+
+            return lacaiosUsados;
+        }
+
+        public void SacarNovoHeroi()
+        {
+            if (DeckHerois.Count > 0)
+            {
+                var novoHeroi = DeckHerois[0];
+                DeckHerois.RemoveAt(0);
+                Mao.Add(novoHeroi);
+                Console.WriteLine($"{Nome} sacou um novo herói: {novoHeroi.Nome}");
+            }
+            else
+            {
+                Console.WriteLine($"{Nome} não tem mais heróis no deck e perdeu o jogo!");
+                HeroisDestruídos = 3; // Força a derrota
+            }
+        }
+
+        public void VerificarHeróisNoCampo()
+        {
+            if ((HeroiAtivo == null || HeroiSuporte == null) && DeckHerois.Count > 0)
+            {
+                Console.WriteLine($"{Nome} não tem dois heróis no campo! Escolha um herói para colocar em campo.");
+                SacarNovoHeroi();
+                if (HeroiAtivo == null)
+                {
+                    HeroiAtivo = Mao.First(c => c.Tipo == "Herói");
+                    Mao.Remove(HeroiAtivo);
+                }
+                else if (HeroiSuporte == null)
+                {
+                    HeroiSuporte = Mao.First(c => c.Tipo == "Herói");
+                    Mao.Remove(HeroiSuporte);
+                }
+            }
+        }
+
+        public bool VerificarDerrota()
+        {
+            return HeroisDestruídos >= 3;
+        }
+
+        public void MostrarCampo()
+        {
+            Console.WriteLine($"Campo de {Nome}:");
+            Console.WriteLine($"- Fileira Superior (Lacaios): {string.Join(", ", CampoSuperior.Select(c => c.Nome))}");
+            Console.WriteLine($"- Herói Ativo (Meio): {HeroiAtivo?.Nome ?? "Nenhum"}");
+            Console.WriteLine($"- Herói Suporte (Inferior): {HeroiSuporte?.Nome ?? "Nenhum"}");
+        }
+
+        public void RecuperarEnergia()
+        {
+            EnergiaTotal = EnergiaMaxima; // Regenera a energia total no início do turno
+            Console.WriteLine($"{Nome} recuperou energia. Energia total: {EnergiaTotal}");
+        }
+
+        public void AumentarEnergiaMaxima()
+        {
+            if (EnergiaMaxima < 6) // Limite máximo de 6
+            {
+                EnergiaMaxima++;
+                Console.WriteLine($"{Nome} ganhou +1 de energia máxima. Energia máxima: {EnergiaMaxima}");
+            }
+        }
+
+        public static void MostrarSucata()
+        {
+            Console.WriteLine($"Sucata: {string.Join(", ", Sucata.Select(c => c.Nome))}");
+        }
+    }
+}
