@@ -1,0 +1,102 @@
+using System;
+using System.Threading;
+
+namespace NTWarriors
+{
+    class GameManager
+    {
+        public Jogador Jogador1 { get; private set; }
+        public Jogador Jogador2 { get; private set; }
+        public int TurnoAtual { get; private set; } = 1;
+        public bool JogoAtivo { get; private set; } = true;
+
+        public GameManager(Jogador jogador1, Jogador jogador2)
+        {
+            Jogador1 = jogador1;
+            Jogador2 = jogador2;
+        }
+
+        public void IniciarJogo()
+        {
+            Console.WriteLine("O jogo começou!");
+            while (JogoAtivo)
+            {
+                Jogador jogadorAtual = (TurnoAtual % 2 == 1) ? Jogador1 : Jogador2;
+                Jogador jogadorAdversario = (TurnoAtual % 2 == 1) ? Jogador2 : Jogador1;
+
+                Console.Clear();
+                Console.WriteLine($"Turno {TurnoAtual} - {jogadorAtual.Nome}'s vez!");
+
+                // Regenera energia e aumenta energia máxima
+                jogadorAtual.RecuperarEnergia();
+                jogadorAtual.AumentarEnergiaMaxima();
+
+                // Verificar se o jogador pode sacar uma carta
+                if (jogadorAtual.DeckPrincipal.Count > 0)
+                {
+                    jogadorAtual.ComprarCarta(jogadorAtual.DeckPrincipal);
+                }
+                else
+                {
+                    Console.WriteLine($"{jogadorAtual.Nome} não tem mais cartas no deck e perdeu o jogo!");
+                    JogoAtivo = false;
+                    break;
+                }
+
+                jogadorAtual.VerificarHeróisNoCampo();
+                jogadorAtual.MostrarCampo();
+                jogadorAdversario.MostrarCampo();
+
+                // Opção de trocar heróis
+                Console.WriteLine("\nDeseja trocar a posição do herói ativo e do herói de suporte? (s/n)");
+                string trocar = Console.ReadLine();
+                if (trocar.ToLower() == "s")
+                {
+                    jogadorAtual.TrocarHerois();
+                }
+
+                Console.WriteLine("\nO que você quer fazer?");
+                Console.WriteLine("1. Atacar");
+                Console.WriteLine("2. Jogar uma carta");
+                Console.Write("Escolha: ");
+                string escolha = Console.ReadLine();
+
+                if (escolha == "1")
+                {
+                    jogadorAtual.Atacar(jogadorAdversario);
+                }
+                else if (escolha == "2")
+                {
+                    Console.WriteLine("Escolha uma carta para jogar:");
+                    for (int i = 0; i < jogadorAtual.Mao.Count; i++)
+                    {
+                        Console.WriteLine($"{i + 1}. {jogadorAtual.Mao[i].Nome}");
+                    }
+
+                    int cartaEscolhida;
+                    bool entradaValida = int.TryParse(Console.ReadLine(), out cartaEscolhida);
+                    if (entradaValida && cartaEscolhida >= 1 && cartaEscolhida <= jogadorAtual.Mao.Count)
+                    {
+                        jogadorAtual.JogarCarta(jogadorAtual.Mao[cartaEscolhida - 1]);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Escolha inválida.");
+                    }
+                }
+
+                if (jogadorAdversario.VerificarDerrota())
+                {
+                    Console.WriteLine($"{jogadorAdversario.Nome} perdeu o jogo!");
+                    Console.WriteLine($"{jogadorAtual.Nome} venceu em {TurnoAtual} turnos!");
+                    JogoAtivo = false;
+                }
+
+                TurnoAtual++;
+                Thread.Sleep(2000);
+            }
+
+            Console.WriteLine("Fim do jogo!");
+        }
+    }
+}
