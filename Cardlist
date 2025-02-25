@@ -338,6 +338,47 @@ public static class CartasEHabilidades
                         }
                     }
                 }
+            ),
+            new Carta(
+                nome: "Magnet Man",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 2,
+                poder: 2000,
+                resistencia: 4000,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Troca Magnética",
+                        Tipo = "Ativa",
+                        Descricao = "Ativa: Custa 2 de energia. Troca a posição do herói ativo e o suporte adversário (uma vez por turno).",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            if (jogador.EnergiaTotal >= 2) // Verifica se há energia suficiente
+                            {
+                                if (adversario.HeroiAtivo != null && adversario.HeroiSuporte != null)
+                                {
+                                    // Troca as posições dos heróis adversários
+                                    var temp = adversario.HeroiAtivo;
+                                    adversario.HeroiAtivo = adversario.HeroiSuporte;
+                                    adversario.HeroiSuporte = temp;
+
+                                    Console.WriteLine($"Magnet Man trocou a posição de {adversario.HeroiAtivo.Nome} e {adversario.HeroiSuporte.Nome}!");
+                                    jogador.EnergiaTotal -= 2; // Gasta 2 de energia
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Não é possível trocar as posições. Verifique se ambos os heróis adversários estão em campo.");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Energia insuficiente para ativar a habilidade.");
+                            }
+                        }
+                    }
+                }
             )
         };
     }
