@@ -249,6 +249,95 @@ public static class CartasEHabilidades
                 poder: 4000,
                 resistencia: 3500,
                 habilidades: null
+            ),
+            new Carta(
+                nome: "Quick Man",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 1,
+                poder: 1000,
+                resistencia: 4000,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Ataque Rápido",
+                        Tipo = "Ativa",
+                        Descricao = "Ativa: Custa 1 de energia. Ataca uma segunda vez qualquer alvo, incluindo o herói na área de suporte (uma vez por turno).",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            if (jogador.QuickManPodeAtacar && jogador.EnergiaTotal >= 1) // Verifica se a habilidade já foi usada e se há energia suficiente
+                            {
+                                Console.WriteLine("Escolha um alvo para o segundo ataque:");
+                                Console.WriteLine("1. Herói Ativo");
+                                Console.WriteLine("2. Herói de Suporte");
+                                Console.WriteLine("3. Lacaio");
+
+                                int escolha;
+                                bool escolhaValida = int.TryParse(Console.ReadLine(), out escolha);
+
+                                if (escolhaValida)
+                                {
+                                    switch (escolha)
+                                    {
+                                        case 1:
+                                            if (adversario.HeroiAtivo != null)
+                                            {
+                                                adversario.HeroiAtivo.ReceberDano(jogador.HeroiAtivo.Poder);
+                                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} atacou {adversario.HeroiAtivo.Nome} novamente!");
+                                            }
+                                            break;
+                                        case 2:
+                                            if (adversario.HeroiSuporte != null)
+                                            {
+                                                adversario.HeroiSuporte.ReceberDano(jogador.HeroiAtivo.Poder);
+                                                Console.WriteLine($"{jogador.HeroiAtivo.Nome} atacou {adversario.HeroiSuporte.Nome}!");
+                                            }
+                                            break;
+                                        case 3:
+                                            if (adversario.CampoSuperior.Count > 0)
+                                            {
+                                                Console.WriteLine("Escolha um lacaio para atacar:");
+                                                for (int i = 0; i < adversario.CampoSuperior.Count; i++)
+                                                {
+                                                    Console.WriteLine($"{i + 1}. {adversario.CampoSuperior[i].Nome}");
+                                                }
+
+                                                int escolhaLacaio;
+                                                bool escolhaLacaioValida = int.TryParse(Console.ReadLine(), out escolhaLacaio);
+
+                                                if (escolhaLacaioValida && escolhaLacaio >= 1 && escolhaLacaio <= adversario.CampoSuperior.Count)
+                                                {
+                                                    var lacaioAlvo = adversario.CampoSuperior[escolhaLacaio - 1];
+                                                    lacaioAlvo.ReceberDano(jogador.HeroiAtivo.Poder);
+                                                    Console.WriteLine($"{jogador.HeroiAtivo.Nome} atacou {lacaioAlvo.Nome} novamente!");
+                                                }
+                                            }
+                                            break;
+                                        default:
+                                            Console.WriteLine("Escolha inválida. Nenhum ataque adicional foi realizado.");
+                                            break;
+                                    }
+
+                                    jogador.QuickManPodeAtacar = false; // Impede que a habilidade seja usada novamente no mesmo turno
+                                    jogador.EnergiaTotal -= 1; // Gasta 1 de energia para ativar a habilidade
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Escolha inválida. Nenhum ataque adicional foi realizado.");
+                                }
+                            }
+                            else if (!jogador.QuickManPodeAtacar)
+                            {
+                                Console.WriteLine("Quick Man já atacou duas vezes neste turno.");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Energia insuficiente para ativar a habilidade.");
+                            }
+                        }
+                    }
+                }
             )
         };
     }
