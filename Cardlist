@@ -263,10 +263,10 @@ public static class CartasEHabilidades
                     {
                         Nome = "Ataque Rápido",
                         Tipo = "Ativa",
-                        Descricao = "Ativa: Custa 1 de energia. Ataca uma segunda vez qualquer alvo, incluindo o herói na área de suporte (uma vez por turno).",
+                        Descricao = "Ativa: Custa 1 de energia. Após realizar um ataque, Quick Man pode atacar uma segunda vez (uma vez por turno).",
                         Ativar = (jogador, adversario) =>
                         {
-                            if (jogador.QuickManPodeAtacar && jogador.EnergiaTotal >= 1) // Verifica se a habilidade já foi usada e se há energia suficiente
+                            if (jogador.QuickManPodeAtacar && jogador.EnergiaTotal >= 1 && jogador.QuickManJaAtacou) // Verifica se a habilidade já foi usada, se há energia suficiente e se já houve um ataque
                             {
                                 Console.WriteLine("Escolha um alvo para o segundo ataque:");
                                 Console.WriteLine("1. Herói Ativo");
@@ -331,6 +331,10 @@ public static class CartasEHabilidades
                             {
                                 Console.WriteLine("Quick Man já atacou duas vezes neste turno.");
                             }
+                            else if (!jogador.QuickManJaAtacou)
+                            {
+                                Console.WriteLine("Quick Man precisa realizar um ataque antes de usar esta habilidade.");
+                            }
                             else
                             {
                                 Console.WriteLine("Energia insuficiente para ativar a habilidade.");
@@ -379,6 +383,56 @@ public static class CartasEHabilidades
                         }
                     }
                 }
+            ),
+            new Carta(
+                nome: "Colonel",
+                tipo: "Herói",
+                elemento: "Neutro",
+                energia: 3,
+                poder: 2500,
+                resistencia: 4000,
+                habilidades: new List<Habilidade>
+                {
+                    new Habilidade
+                    {
+                        Nome = "Corte Certeiro",
+                        Tipo = "Ativa",
+                        Descricao = "Colonel ataca diretamente o herói ativo do oponente, ignorando Lacaios. Colonel não poderá atacar novamente neste turno.",
+                        Ativar = (jogador, adversario) =>
+                        {
+                            if (jogador.EnergiaTotal >= 5) // Verifica se há energia suficiente
+                            {
+                                if (adversario.HeroiAtivo != null)
+                                {
+                                    // Impede que o oponente use Lacaios para defender
+                                    adversario.PodeUsarLacaiosParaDefender = false;
+
+                                    // Realiza o ataque diretamente no herói ativo
+                                    int dano = jogador.HeroiAtivo.Poder;
+                                    adversario.HeroiAtivo.ReceberDano(dano);
+                                    Console.WriteLine($"{jogador.HeroiAtivo.Nome} usou Corte Certeiro e causou {dano} de dano diretamente em {adversario.HeroiAtivo.Nome}!");
+
+                                    // Restaura a permissão para usar Lacaios após o ataque
+                                    adversario.PodeUsarLacaiosParaDefender = true;
+
+                                    // Impede que o Colonel ataque novamente neste turno
+                                    jogador.HeroiAtivo.PodeAtacar = false;
+
+                                    // Gasta a energia
+                                    jogador.EnergiaTotal -= 5;
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Não há herói ativo para atacar.");
+                                }
+                            }
+                            else
+                            {
+                                Console.WriteLine("Energia insuficiente para ativar Corte Certeiro.");
+                            }
+                        }
+                    }
+                }
             )
         };
     }
@@ -393,6 +447,7 @@ public class Carta
     public int Poder { get; set; }
     public int Resistencia { get; set; }
     public List<Habilidade> Habilidades { get; set; }
+    public bool PodeAtacar { get; set; } = true; // Propriedade para controlar se a carta pode atacar
 
     public Carta(string nome, string tipo, string elemento, int energia, int poder, int resistencia, List<Habilidade> habilidades)
     {
@@ -421,4 +476,18 @@ public class Habilidade
     public string Tipo { get; set; }
     public string Descricao { get; set; }
     public Action<Jogador, Jogador> Ativar { get; set; }
+}
+
+public class Jogador
+{
+    public Carta HeroiAtivo { get; set; }
+    public Carta HeroiSuporte { get; set; }
+    public List<Carta> Mao { get; set; }
+    public List<Carta> CampoSuperior { get; set; }
+    public List<Carta> Sucata { get; set; }
+    public int EnergiaTotal { get; set; }
+    public bool QuickManPodeAtacar { get; set; }
+    public bool QuickManJaAtacou { get; set; }
+    public bool PodeUsarLacaiosParaDefender { get; set; } = true;
+    public int HeroisDestruídos { get; set; }
 }
